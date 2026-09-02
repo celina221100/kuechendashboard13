@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Küche">
+<title>Küchen-Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
+<style>
+
+  :root{
+    --bg: #efe6d6;
+    --panel: #faf6ec;
+    --ink: #3c2c1e;
+    --ink-soft: #7a6650;
+    --rule: #d8c7a8;
+    --rule-soft: #e6dac0;
+  }
+
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{
+    margin:0; padding:0; height:100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Times New Roman", Times, "Liberation Serif", Georgia, serif;
+    overflow: hidden;
+  }
+
+  .frame{
+    height: 100vh;
+    width: 100vw;
+    padding: 3vh 3vw;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .masthead{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 2.2vh;
+    border-bottom: 1.5px solid var(--rule);
+    margin-bottom: 2.4vh;
+    flex-shrink: 0;
+  }
+  .masthead .date{
+    font-size: clamp(20px, 2.6vw, 34px);
+    
+    color: var(--ink-soft);
+    letter-spacing: 0.01em;
+  }
+  .masthead .time{
+    font-size: clamp(44px, 7vw, 92px);
+    font-weight: 400;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+
+  .board{
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 38% 1fr;
+    gap: 3vw;
+  }
+  @media (max-aspect-ratio: 6/5){
+    .board{ grid-template-columns: 1fr; grid-template-rows: auto 1fr; gap: 2.4vh; }
+  }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .panel h2{
+    margin: 0;
+    padding: 1.6vh 1.6vw;
+    font-size: clamp(16px, 1.4vw, 22px);
+    font-weight: 400;
+    
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--rule-soft);
+    flex-shrink: 0;
+  }
+
+  .left-col{
+    display: flex;
+    flex-direction: column;
+    gap: 2vh;
+    min-height: 0;
+  }
+
+  .tram-panel{ flex: 2.4; min-height: 0; }
+  .weather-panel{ flex: 1; min-height: 0; }
+
+  .tram-panel iframe{
+    flex: 1;
+    width: 100%;
+    border: none;
+    background: white;
+  }
+
+  .weather-body{
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1vh 1.6vw;
+    gap: 1vw;
+  }
+
+  .weather-now{
+    display: flex;
+    align-items: baseline;
+    gap: 0.5vw;
+    flex-shrink: 0;
+  }
+  .weather-now .temp{
+    font-size: clamp(30px, 3.4vw, 48px);
+    line-height: 1;
+  }
+  .weather-now .desc{
+    
+    color: var(--ink-soft);
+    font-size: clamp(13px, 1.05vw, 17px);
+  }
+
+  .weather-days{
+    display: flex;
+    gap: 1.4vw;
+  }
+  .weather-day{
+    text-align: center;
+    font-size: clamp(11px, 0.95vw, 15px);
+    color: var(--ink-soft);
+  }
+  .weather-day .wd-name{ }
+  .weather-day .wd-temps{ color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .agenda-panel{
+    background: transparent;
+    border: none;
+    gap: 2vh;
+  }
+
+  .week-section h2{
+    margin: 0;
+    padding: 1.6vh 1.6vw;
+    font-size: clamp(16px, 1.4vw, 22px);
+    font-weight: 400;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--rule-soft);
+    flex-shrink: 0;
+  }
+  .agenda-topbar{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.8vw;
+    flex-shrink: 0;
+    margin-bottom: 0.6vh;
+  }
+  .status-line{
+    font-size: clamp(10px, 0.8vw, 13px);
+    color: var(--ink-soft);
+    opacity: 0.7;
+  }
+  .refresh-btn{
+    font-family: inherit;
+    font-size: clamp(11px, 0.9vw, 14px);
+    color: var(--ink-soft);
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    padding: 0.3vh 0.8vw;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .refresh-btn:active{ background: var(--rule-soft); }
+
+  .week-section{
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border: 1px solid var(--rule);
+  }
+
+  .week-grid{
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  .day-col{
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--rule-soft);
+  }
+  .day-col:first-child{ border-left: none; }
+  .day-col.is-today{ background: var(--rule-soft); }
+
+  .day-col-head{
+    padding: 0.8vh 0.5vw;
+    text-align: center;
+    font-size: clamp(11px, 0.95vw, 15px);
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--rule-soft);
+    flex-shrink: 0;
+  }
+  .day-col-head .num{
+    font-size: clamp(14px, 1.3vw, 20px);
+    color: var(--ink);
+  }
+
+  .day-col-events{
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.6vh 0.4vw;
+  }
+
+  .week-event{
+    padding: 0.4vh 0.2vw;
+    font-size: clamp(10.5px, 0.85vw, 14px);
+    line-height: 1.25;
+    margin-bottom: 0.3vh;
+  }
+  .week-event .dot{
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 0.35em;
+    position: relative;
+    top: -1px;
+  }
+  .week-event .t{
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .day-col-empty{
+    padding: 0.6vh 0.4vw;
+    color: var(--ink-soft);
+    
+    font-size: clamp(10px, 0.8vw, 13px);
+    opacity: 0.6;
+  }
+
+  .agenda-status{
+    padding: 2vh 1.6vw;
+    color: var(--ink-soft);
+    
+    font-size: clamp(13px, 1.05vw, 17px);
+  }
+
+  ::-webkit-scrollbar{ width: 8px; }
+  ::-webkit-scrollbar-thumb{ background: var(--rule); }
+  ::-webkit-scrollbar-track{ background: transparent; }
+
+</style>
+</head>
+<body>
+
+<div class="frame">
+
+  <div class="masthead">
+    <div class="date" id="dateDisplay">&nbsp;</div>
+    <div class="time" id="timeDisplay">&nbsp;</div>
+  </div>
+
+  <div class="board">
+
+    <div class="left-col">
+      <div class="panel tram-panel">
+        <h2>Straßenbahn · Saturnstraße</h2>
+        <iframe id="tramFrame" src="about:blank" title="Abfahrten Saturnstraße"></iframe>
+      </div>
+
+      <div class="panel weather-panel">
+        <h2>Wetter · Plovdiver Straße</h2>
+        <div id="weatherBody" class="weather-body">
+          <div class="agenda-status">Wetter wird geladen …</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel agenda-panel">
+      <div class="agenda-topbar">
+        <span class="status-line" id="statusLine"></span>
+        <button class="refresh-btn" onclick="loadAgenda(); loadWeather();">Aktualisieren</button>
+      </div>
+      <div class="week-section">
+        <h2>Celina · diese Woche</h2>
+        <div class="week-grid" id="weekCelina">
+          <div class="agenda-status">Kalender werden geladen …</div>
+        </div>
+      </div>
+      <div class="week-section">
+        <h2>Fabi · diese Woche</h2>
+        <div class="week-grid" id="weekFabi">
+          <div class="agenda-status">Kalender werden geladen …</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+/* ============================================================
+   KONFIGURATION — hier anpassen
+   ============================================================ */
+
+const TRAM_STATIONBOARD_URL =
+  "https://stationboard.l.de/monitor/0012426?bgh=032c58&ch=ffffff&headertext=Leipzig%2C%20Saturnstr.&showheader=0&bgodd=e5f2fb&codd=032c58&bgeven=ffffff&ceven=032c58&bgsh=ffffff&csh=032c58&numrows=7&walktime=0&showtrack=0&showtransportType=1&transporttypes=bahn_bus_sbahn_tram_rufbus";
+
+const CALENDARS = [
+  { name: "Arbeit",                    person: "celina", color: "#8C9450", cacheFile: "calendar-data/arbeit.ics" },
+  { name: "Bildungswissenschaften",    person: "celina", color: "#6AB3BC", cacheFile: "calendar-data/bildungswissenschaften.ics" },
+  { name: "Gesundheit und Pflege",     person: "celina", color: "#E087A2", cacheFile: "calendar-data/gesundheit-und-pflege.ics" },
+  { name: "Anatomie",                  person: "celina", color: "#F4DB7E", cacheFile: "calendar-data/anatomie.ics" },
+  { name: "Geschichte",                person: "celina", color: "#8C6E43", cacheFile: "calendar-data/geschichte.ics" },
+  { name: "Psychosomatische Medizin",  person: "celina", color: "#A5CC70", cacheFile: "calendar-data/psychosomatische-medizin.ics" },
+  { name: "Wirkung von Arzneimitteln", person: "celina", color: "#ABCFE7", cacheFile: "calendar-data/wirkung-von-arzneimitteln.ics" },
+  { name: "Termine",                   person: "celina", color: "#C4B3CC", cacheFile: "calendar-data/termine.ics" },
+  { name: "Wichtig",                   person: "celina", color: "#6D2432", cacheFile: "calendar-data/wichtig.ics" },
+  { name: "Geburtstage",               person: "celina", color: "#355554", cacheFile: "calendar-data/geburtstage.ics" },
+  { name: "Fabi",                      person: "fabi",   color: "#8C6E43", cacheFile: "calendar-data/fabi.ics" }
+];
+
+// Plovdiver Straße, Leipzig
+const WEATHER_LAT = 51.3172;
+const WEATHER_LON = 12.2684;
+
+const DAYS_AHEAD = 10;
+const REFRESH_INTERVAL = 15 * 60 * 1000;
+
+/* ============================================================
+   Uhr & Datum
+   ============================================================ */
+
+function updateClock(){
+  const now = new Date();
+  document.getElementById("timeDisplay").textContent =
+    now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  document.getElementById("dateDisplay").textContent =
+    now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+/* ============================================================
+   Straßenbahn-Widget laden
+   ============================================================ */
+
+document.getElementById("tramFrame").src = TRAM_STATIONBOARD_URL;
+
+/* ============================================================
+   Kalender laden, parsen, zusammenführen
+   ============================================================ */
+
+async function fetchWithTimeout(url, ms){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try{
+    return await fetch(url, { cache: "no-store", signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchCalendarEvents(cal, rangeStart, rangeEnd){
+  const events = [];
+  let text;
+  try{
+    const separator = cal.cacheFile.includes("?") ? "&" : "?";
+    const res = await fetchWithTimeout(cal.cacheFile + separator + "v=" + Date.now(), 10000);
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    text = await res.text();
+    if(!text.includes("BEGIN:VCALENDAR")) throw new Error("Keine gültige Kalenderdatei");
+  } catch(err){
+    console.warn("Lokale Kalenderdatei konnte nicht geladen werden:", cal.name, err);
+    return { events, ok: false };
+  }
+
+  try{
+    const jcal = ICAL.parse(text);
+    const comp = new ICAL.Component(jcal);
+    const vevents = comp.getAllSubcomponents("vevent");
+
+    vevents.forEach(ve => {
+      const event = new ICAL.Event(ve);
+      const durationMs = (event.duration ? event.duration.toSeconds() : 0) * 1000;
+
+      if(event.isRecurring()){
+        const iterator = event.iterator();
+        let next, guard = 0;
+        while((next = iterator.next()) && guard < 500){
+          guard++;
+          const start = next.toJSDate();
+          if(start > rangeEnd) break;
+          if(start >= rangeStart){
+            events.push(makeEntry(cal, event.summary, start, new Date(start.getTime() + durationMs), event.startDate.isDate));
+          }
+        }
+      } else {
+        const start = event.startDate.toJSDate();
+        const end = new Date(start.getTime() + durationMs);
+        if(end >= rangeStart && start <= rangeEnd){
+          events.push(makeEntry(cal, event.summary, start, end, event.startDate.isDate));
+        }
+      }
+    });
+  } catch(err){
+    console.warn("Kalender konnte nicht geladen werden:", cal.name, err);
+    return { events, ok: false };
+  }
+  return { events, ok: true };
+}
+
+function makeEntry(cal, title, start, end, isAllDay){
+  return { calName: cal.name, person: cal.person, color: cal.color, title: title || "(ohne Titel)", start, end, isAllDay };
+}
+
+function dayKey(date){
+  return date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate();
+}
+
+const WEEKDAY_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+
+function getMonday(date){
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = d.getDay(); // 0 = Sonntag
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function renderWeekGrid(containerId, events, weekStart, today){
+  const container = document.getElementById(containerId);
+  let html = "";
+
+  for(let i = 0; i < 7; i++){
+    const colDate = new Date(weekStart.getTime() + i * 86400000);
+    const isToday = colDate.toDateString() === today.toDateString();
+    const dayEvents = events
+      .filter(e => e.start.toDateString() === colDate.toDateString() ||
+                   (e.isAllDay && e.start <= colDate && e.end > colDate))
+      .sort((a, b) => a.start - b.start);
+
+    html += '<div class="day-col' + (isToday ? ' is-today' : '') + '">';
+    html += '<div class="day-col-head">' + WEEKDAY_SHORT[i] + '<br><span class="num">' + colDate.getDate() + '.</span></div>';
+    html += '<div class="day-col-events">';
+    if(dayEvents.length === 0){
+      html += '<div class="day-col-empty">–</div>';
+    } else {
+      dayEvents.forEach(e => {
+        const t = e.isAllDay ? "" :
+          '<span class="t">' + e.start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + '</span> ';
+        html += '<div class="week-event"><span class="dot" style="background:' + e.color + '"></span>' + t + escapeHtml(e.title) + '</div>';
+      });
+    }
+    html += '</div></div>';
+  }
+
+  container.innerHTML = html;
+}
+
+async function loadAgenda(){
+  const now = new Date();
+  const weekStart = getMonday(now);
+  const weekEnd = new Date(weekStart.getTime() + 7 * 86400000);
+  const all = [];
+  const status = {}; // calName -> ok boolean
+
+  function refresh(){
+    const celinaEvents = all.filter(e => e.person === "celina");
+    const fabiEvents = all.filter(e => e.person === "fabi");
+    renderWeekGrid("weekCelina", celinaEvents, weekStart, now);
+    renderWeekGrid("weekFabi", fabiEvents, weekStart, now);
+    renderStatus();
+  }
+
+  function renderStatus(){
+    const timeStr = new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    const done = CALENDARS.filter(c => c.name in status);
+    const ok = done.filter(c => status[c.name]);
+    const target = document.getElementById("statusLine");
+    if(target) target.textContent = "Stand " + timeStr + " · " + ok.length + "/" + CALENDARS.length + " Kalender geladen";
+  }
+
+  const CONCURRENCY = 4;
+  let idx = 0;
+
+  async function worker(){
+    while(idx < CALENDARS.length){
+      const cal = CALENDARS[idx++];
+      try{
+        const result = await fetchCalendarEvents(cal, weekStart, weekEnd);
+        all.push(...result.events);
+        status[cal.name] = result.ok;
+      } catch(err){
+        console.warn("Unerwarteter Fehler:", cal.name, err);
+        status[cal.name] = false;
+      }
+      refresh();
+    }
+  }
+
+  await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[m]));
+}
+
+/* ============================================================
+   Wetter
+   ============================================================ */
+
+const WEATHER_DESCRIPTIONS = {
+  0: "klar", 1: "meist klar", 2: "teils bewölkt", 3: "bewölkt",
+  45: "neblig", 48: "neblig", 51: "leichter Nieselregen", 53: "Nieselregen", 55: "starker Nieselregen",
+  61: "leichter Regen", 63: "Regen", 65: "starker Regen",
+  66: "gefrierender Regen", 67: "gefrierender Regen",
+  71: "leichter Schnee", 73: "Schnee", 75: "starker Schnee", 77: "Schneegriesel",
+  80: "Regenschauer", 81: "Regenschauer", 82: "heftige Schauer",
+  85: "Schneeschauer", 86: "starker Schneeschauer",
+  95: "Gewitter", 96: "Gewitter mit Hagel", 99: "schweres Gewitter"
+};
+
+async function loadWeather(){
+  const el = document.getElementById("weatherBody");
+  try{
+    const url = "https://api.open-meteo.com/v1/forecast?latitude=" + WEATHER_LAT +
+      "&longitude=" + WEATHER_LON +
+      "&current=temperature_2m,weather_code" +
+      "&daily=temperature_2m_max,temperature_2m_min,weather_code" +
+      "&timezone=Europe%2FBerlin&forecast_days=4";
+    const res = await fetch(url, { cache: "no-store" });
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+
+    const nowTemp = Math.round(data.current.temperature_2m);
+    const nowDesc = WEATHER_DESCRIPTIONS[data.current.weather_code] || "";
+
+    let daysHtml = "";
+    for(let i = 1; i <= 3; i++){
+      const date = new Date(data.daily.time[i]);
+      const wd = WEEKDAY_SHORT[(date.getDay() + 6) % 7];
+      const max = Math.round(data.daily.temperature_2m_max[i]);
+      const min = Math.round(data.daily.temperature_2m_min[i]);
+      daysHtml += '<div class="weather-day"><div class="wd-name">' + wd + '</div>' +
+        '<div class="wd-temps">' + max + '° / ' + min + '°</div></div>';
+    }
+
+    el.innerHTML =
+      '<div class="weather-now"><span class="temp">' + nowTemp + '°</span><span class="desc">' + nowDesc + '</span></div>' +
+      '<div class="weather-days">' + daysHtml + '</div>';
+  } catch(err){
+    console.warn("Wetter konnte nicht geladen werden:", err);
+    el.innerHTML = '<div class="agenda-status">Wetter aktuell nicht verfügbar.</div>';
+  }
+}
+
+loadAgenda();
+loadWeather();
+setInterval(loadAgenda, REFRESH_INTERVAL);
+setInterval(loadWeather, REFRESH_INTERVAL);
+setInterval(() => { document.getElementById("tramFrame").src = TRAM_STATIONBOARD_URL; }, 5 * 60 * 1000);
+
+</script>
+</body>
+</html>
