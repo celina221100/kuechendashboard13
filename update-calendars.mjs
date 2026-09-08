@@ -11,7 +11,8 @@ const calendars = [
   ["termine.ics", "https://p186-caldav.icloud.com/published/2/OTcwODUxMjc4OTcwODUxMnYHZOSAWSz7CC0U1KYsWa-tQaUl0xQjTIoFQNnKD0GTisbkc5ci3PxJTHgHFsSswdMG-IB5j4zk5TLlrS-iwag"],
   ["wichtig.ics", "https://p186-caldav.icloud.com/published/2/OTcwODUxMjc4OTcwODUxMnYHZOSAWSz7CC0U1KYsWa-tbcx0dRvluyhnduX-5r6KgGeRzLhwZM524c1stKC_1sp8IBGx_-3Lu46LitmfwUk"],
   ["geburtstage.ics", "https://p186-caldav.icloud.com/published/2/OTcwODUxMjc4OTcwODUxMnYHZOSAWSz7CC0U1KYsWa998s-Zen04rgrDSKPHJB29vzkhxGJlTzrji2J7zCm-DsRRgaviSQfIC4LDvYMO1H0"],
-  ["fabi.ics", "https://calendar.google.com/calendar/ical/fabian130800%40gmail.com/public/basic.ics"]
+  ["fabi.ics", "https://calendar.google.com/calendar/ical/fabian130800%40gmail.com/public/basic.ics"],
+  ["fabi-geburtstage.ics", "https://calendar.google.com/calendar/ical/9d54524d9d62db4cfa371e8f88539476d81dcba8c065f5867dbe35e42406d599%40group.calendar.google.com/public/basic.ics"]
 ];
 
 await mkdir("calendar-data", { recursive: true });
